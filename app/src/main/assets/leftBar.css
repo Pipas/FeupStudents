@@ -1,0 +1,76 @@
+#colunaextra {
+    display: none !important;
+}
+
+#barralocalizacao {
+    display: none !important;
+}
+
+#cabecalho {
+    display: none !important;
+}
+
+#conteudo {
+    display: none !important;
+}
+
+div#colunaprincipal {
+    margin: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column-reverse;
+}
+
+div#menu-navegacao-conteudo ul li {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+div#menu-navegacao-conteudo ul li a:link {
+    font-size: 24px;
+}
+
+div#caixa-validacao-cabecalho {
+    font-size: 24px;
+    height: 56px;
+    line-height: 46.4px;
+}
+
+div#caixa-validacao-conteudo {
+    font-size: 24px;
+}
+
+div#caixa-validacao-conteudo a {
+    font-size: 24px;
+}
+
+div#caixa-validacao-conteudo input {
+    height: 56px;
+    width: 80%;
+    font-size: 24px;
+}
+
+div#caixa-validacao-conteudo button {
+    height: 56px;
+    width: 80%;
+    font-size: 24px;
+    margin-bottom: 6px;
+}
+
+div#caixa-validacao-conteudo a.federacao {
+    display: none !important;
+}
+
+div#caixa-validacao-conteudo label {
+    font-size: 24px;
+}
+
+div#caixa-campus {
+    display: none !important;
+}
+
+img.sama {
+    display: none !important;
+}

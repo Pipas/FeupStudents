@@ -1,0 +1,19 @@
+#colunaextra {
+    display: none !important;
+}
+
+#barralocalizacao {
+    display: none !important;
+}
+
+#cabecalho {
+    display: none !important;
+}
+
+#conteudoinner {
+    display: inline-block
+}
+
+div#colunaprincipal {
+    display: none !important;
+}

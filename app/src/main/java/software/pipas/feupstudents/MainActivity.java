@@ -16,10 +16,22 @@ import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Toast;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigation;
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigationItem;
+import com.mikepenz.fontawesome_typeface_library.FontAwesome;
+import com.mikepenz.materialdrawer.AccountHeader;
+import com.mikepenz.materialdrawer.AccountHeaderBuilder;
+import com.mikepenz.materialdrawer.Drawer;
+import com.mikepenz.materialdrawer.DrawerBuilder;
+import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
+import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
+import com.mikepenz.materialdrawer.model.SecondaryDrawerItem;
+import com.mikepenz.materialdrawer.model.SectionDrawerItem;
+import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
+import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,15 +39,19 @@ import java.io.InputStream;
 public class MainActivity extends AppCompatActivity
 {
     private String debugTag = "FEUPDEBUG";
+
+
     private AHBottomNavigation bottomNavigation;
     private ObservableWebView webView;
-    private String optionsCss, homeCss, contentCss;
-    private Boolean firstLoad = true;
-    private int previousT = 0;
-    private Boolean animating = false;
     private SwipeRefreshLayout swipeContainer;
-    private String username;
-    private String password;
+    private Drawer navDrawer;
+    private AccountHeader navDrawerHeader;
+
+    private String optionsCss, homeCss, contentCss, username, password;
+    private int previousT = 0;
+    private Boolean isLoggedIn = false;
+    private Boolean animating = false;
+    private Boolean loginAttempt = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -43,7 +59,9 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        checkLogin();
+        checkLoginCredentials();
+
+        initNavDrawer();
 
         initEncodedCss();
 
@@ -53,7 +71,6 @@ public class MainActivity extends AppCompatActivity
         webView = findViewById(R.id.webview);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.addJavascriptInterface(new WebAppInterface(this), "Android");
-        webView.setVisibility(View.GONE);
 
         swipeContainer = findViewById(R.id.swipeContainer);
 
@@ -67,13 +84,65 @@ public class MainActivity extends AppCompatActivity
         webView.loadUrl("https://sigarra.up.pt/feup/pt/web_page.inicial");
     }
 
-    private void checkLogin()
+    private void initNavDrawer()
+    {
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        IProfile profile;
+        if(username != null)
+             profile = new ProfileDrawerItem().withName(username).withEmail(username+ "@fe.up.pt");
+        else
+            profile = new ProfileDrawerItem().withName("Login Inválido").withEmail("Login Inválido");
+
+        navDrawerHeader = new AccountHeaderBuilder()
+                .withActivity(this)
+                .withCompactStyle(true)
+                .withHeaderBackground(R.drawable.header)
+                .withProfileImagesVisible(false)
+                .addProfiles(profile)
+                .withSelectionListEnabledForSingleProfile(false)
+                .build();
+
+        navDrawer = new DrawerBuilder()
+                .withActivity(this)
+                .withAccountHeader(navDrawerHeader)
+                .withToolbar(toolbar)
+                .addDrawerItems(
+                        new PrimaryDrawerItem().withIdentifier(1).withName("Inicio").withIcon(FontAwesome.Icon.faw_home),
+                        new PrimaryDrawerItem().withIdentifier(2).withName("Adicionar").withIcon(FontAwesome.Icon.faw_plus).withSelectable(false),
+                        new SectionDrawerItem().withName(R.string.app_name),
+                        new SecondaryDrawerItem().withIdentifier(3).withName("GitHub").withIcon(FontAwesome.Icon.faw_github).withSelectable(false),
+                        new SecondaryDrawerItem().withIdentifier(4).withName("Contacto").withIcon(FontAwesome.Icon.faw_envelope).withSelectable(false)
+                )
+                .withSelectedItem(1)
+                .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener()
+                {
+                    @Override
+                    public boolean onItemClick(View view, int position, IDrawerItem drawerItem)
+                    {
+                        if(drawerItem.getIdentifier() == 2)
+                        {
+                            navDrawer.addItemAtPosition(new PrimaryDrawerItem().withIdentifier(1).withName("Novo").withIcon(FontAwesome.Icon.faw_file), 2);
+                        }
+                        return false;
+                    }
+                })
+                .build();
+
+    }
+
+    private void checkLoginCredentials()
     {
         SharedPreferences sharedPref = this.getSharedPreferences("gameSettings", Context.MODE_PRIVATE);
         username = sharedPref.getString(getString(R.string.saved_username), null);
         password = sharedPref.getString(getString(R.string.saved_password), null);
 
-        Log.d(debugTag, "Check login " + username + " " + password);
+        if(password != null && username != null)
+            Log.d(debugTag, "Valid credentials");
+        else
+            Log.d(debugTag, "Null credentials");
+
 
         if(username == null && password == null)
         {
@@ -96,10 +165,10 @@ public class MainActivity extends AppCompatActivity
         });
 
         swipeContainer.setColorSchemeResources(R.color.colorPrimary);
-        swipeContainer.setRefreshing(true);
     }
 
-    private void addAWebViewClient() {
+    private void addAWebViewClient()
+    {
         webView.setWebViewClient(new WebViewClient()
         {
             @Override
@@ -113,21 +182,18 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onPageFinished(WebView view, String url)
             {
-                if(firstLoad)
+                Log.d(debugTag, "Finished loading url: " + url);
+
+                if(!isLoggedIn)
                 {
-                    loginSigarra();
-                    firstLoad = false;
-                    injectCSS(homeCss);
-                    bottomNavigation.setCurrentItem(0);
-                    bottomNavigation.enableItemAtPosition(1);
-                    bottomNavigation.enableItemAtPosition(2);
+                    checkLogin();
                 }
                 else
                 {
                     injectCSS(contentCss);
                     bottomNavigation.setCurrentItem(1);
+                    checkCssLoad();
                 }
-                checkCssLoad();
 
                 super.onPageFinished(view, url);
             }
@@ -148,7 +214,8 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
-    private void setWebViewScrollListener() {
+    private void setWebViewScrollListener()
+    {
         webView.setOnScrollChangedCallback(new ObservableWebView.OnScrollChangedCallback()
         {
             public void onScroll(int l, int t)
@@ -184,7 +251,8 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
-    private void initEncodedCss() {
+    private void initEncodedCss()
+    {
         Log.d(debugTag, "Started reading css encoding");
 
         optionsCss = getEncodedString("rightBar.css");
@@ -196,15 +264,14 @@ public class MainActivity extends AppCompatActivity
 
     private void loginSigarra()
     {
-        Log.d(debugTag, "LOGIN ATTEMPT: " + username + " | " + password);
+        Log.d(debugTag, "Login attempt, has credentials: " + (password != null && username != null));
         if(password != null && username != null)
         {
             webView.loadUrl("javascript:(function(){" +
-                    "if(document.getElementsByClassName('nomelogin').length == 0) {" +
                     "var u = document.getElementById('user').value = '" + username + "';" +
                     "var p = document.getElementById('pass').value = '" + password + "';" +
                     "document.forms[0].submit();" +
-                    "}})()");
+                    "})()");
         }
     }
 
@@ -254,6 +321,16 @@ public class MainActivity extends AppCompatActivity
                 "{Android.cssLoaded();}" +
                 "else" +
                 "{Android.cssNotLoaded();}" +
+                "})()");
+    }
+
+    private void checkLogin()
+    {
+        webView.loadUrl("javascript:(function(){" +
+                "if(document.getElementsByClassName('nomelogin').length != 0)" +
+                "{Android.isLoggedIn();}" +
+                "else" +
+                "{Android.isNotLoggedIn();}" +
                 "})()");
     }
 
@@ -350,6 +427,29 @@ public class MainActivity extends AppCompatActivity
         webView.reload();
     }
 
+    public void isLoggedIn(Boolean lg)
+    {
+        if(lg)
+        {
+            Log.d(debugTag, "User is logged in");
+            injectCSS(homeCss);
+            bottomNavigation.setCurrentItem(0);
+            bottomNavigation.enableItemAtPosition(1);
+            bottomNavigation.enableItemAtPosition(2);
+            isLoggedIn = true;
+            checkCssLoad();
+        }
+        else
+        {
+            Log.d(debugTag, "User is not logged in");
+            if(!loginAttempt)
+            {
+                loginSigarra();
+                loginAttempt = true;
+            }
+        }
+    }
+
     public class WebAppInterface
     {
         MainActivity activity;
@@ -378,6 +478,30 @@ public class MainActivity extends AppCompatActivity
                 public void run()
                 {
                     activity.reload();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void isLoggedIn()
+        {
+            activity.runOnUiThread(new Runnable()
+            {
+                public void run()
+                {
+                    activity.isLoggedIn(true);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void isNotLoggedIn()
+        {
+            activity.runOnUiThread(new Runnable()
+            {
+                public void run()
+                {
+                    activity.isLoggedIn(false);
                 }
             });
         }

@@ -1,23 +1,41 @@
 package software.pipas.feupstudents;
 
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
+
+import com.aurelhubert.ahbottomnavigation.AHBottomNavigation;
+import com.aurelhubert.ahbottomnavigation.AHBottomNavigationItem;
 
 import java.io.IOException;
 import java.io.InputStream;
 
-public class MainActivity extends AppCompatActivity {
-
-    WebView webView;
-    String rightCss, leftCss, contentCss;
-    Boolean firstLoad = true;
+public class MainActivity extends AppCompatActivity
+{
+    private String debugTag = "FEUPDEBUG";
+    private AHBottomNavigation bottomNavigation;
+    private ObservableWebView webView;
+    private String optionsCss, homeCss, contentCss;
+    private Boolean firstLoad = true;
+    private int previousT = 0;
+    private Boolean animating = false;
+    private SwipeRefreshLayout swipeContainer;
+    private String username;
+    private String password;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -25,30 +43,91 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        rightCss = getEncodedString("rightBar.css");
-        leftCss = getEncodedString("leftBar.css");
-        contentCss = getEncodedString("content.css");
+        checkLogin();
 
-        webView = (WebView) findViewById(R.id.webview);
-        // Enable Javascript
+        initEncodedCss();
+
+        bottomNavigation = findViewById(R.id.bottom_navigation);
+        populateBottomBar();
+
+        webView = findViewById(R.id.webview);
         webView.getSettings().setJavaScriptEnabled(true);
-        webView.getSettings().setDomStorageEnabled(true);
+        webView.addJavascriptInterface(new WebAppInterface(this), "Android");
+        webView.setVisibility(View.GONE);
 
-        // Add a WebViewClient
-        webView.setWebViewClient(new WebViewClient() {
+        swipeContainer = findViewById(R.id.swipeContainer);
+
+        setSwipeContainerListener();
+
+        addAWebViewClient();
+
+        setWebViewScrollListener();
+
+        Log.d(debugTag, "Started loading page");
+        webView.loadUrl("https://sigarra.up.pt/feup/pt/web_page.inicial");
+    }
+
+    private void checkLogin()
+    {
+        SharedPreferences sharedPref = this.getSharedPreferences("gameSettings", Context.MODE_PRIVATE);
+        username = sharedPref.getString(getString(R.string.saved_username), null);
+        password = sharedPref.getString(getString(R.string.saved_password), null);
+
+        Log.d(debugTag, "Check login " + username + " " + password);
+
+        if(username == null && password == null)
+        {
+            Intent myIntent = new Intent(this, LoginActivity.class);
+            startActivityForResult(myIntent, 1);
+        }
+    }
+
+    private void setSwipeContainerListener()
+    {
+        swipeContainer.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener()
+        {
+            @Override
+            public void onRefresh()
+            {
+                Log.d(debugTag, "Refreshing");
+                webView.setVisibility(View.GONE);
+                webView.reload();
+            }
+        });
+
+        swipeContainer.setColorSchemeResources(R.color.colorPrimary);
+        swipeContainer.setRefreshing(true);
+    }
+
+    private void addAWebViewClient() {
+        webView.setWebViewClient(new WebViewClient()
+        {
+            @Override
+            public void onPageStarted(WebView view, String url, Bitmap favicon)
+            {
+                webView.setVisibility(View.GONE);
+                swipeContainer.setRefreshing(true);
+                super.onPageStarted(view, url, favicon);
+            }
 
             @Override
             public void onPageFinished(WebView view, String url)
             {
-                webView.setVisibility(View.VISIBLE);
                 if(firstLoad)
                 {
                     loginSigarra();
-                    injectCSS(leftCss);
                     firstLoad = false;
+                    injectCSS(homeCss);
+                    bottomNavigation.setCurrentItem(0);
+                    bottomNavigation.enableItemAtPosition(1);
+                    bottomNavigation.enableItemAtPosition(2);
                 }
                 else
+                {
                     injectCSS(contentCss);
+                    bottomNavigation.setCurrentItem(1);
+                }
+                checkCssLoad();
 
                 super.onPageFinished(view, url);
             }
@@ -56,11 +135,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url)
             {
-                // do your handling codes here, which url is the requested url
-                // probably you need to open that url rather than redirect:
-                if(url.startsWith("https://sigarra.up.pt/feup/pt/"))
+                if(url.contains("//sigarra.up.pt/feup/pt/"))
                 {
-                    view.loadUrl(url);
                     return false;
                 }
                 else
@@ -70,18 +146,66 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
 
-        webView.loadUrl("https://sigarra.up.pt/feup/pt/web_page.inicial");
+    private void setWebViewScrollListener() {
+        webView.setOnScrollChangedCallback(new ObservableWebView.OnScrollChangedCallback()
+        {
+            public void onScroll(int l, int t)
+            {
+                if (t > (previousT + 5) && !animating)
+                {
+                    bottomNavigation.hideBottomNavigation(true);
+                    animating = true;
+                    webView.postDelayed(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            animating = false;
+                        }
+                    }, 300);
+                }
+                else if (t < (previousT - 5) && !animating)
+                {
+                    bottomNavigation.restoreBottomNavigation(true);
+                    animating = true;
+                    webView.postDelayed(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            animating = false;
+                        }
+                    }, 300);
+                }
+                previousT = t;
+            }
+        });
+    }
+
+    private void initEncodedCss() {
+        Log.d(debugTag, "Started reading css encoding");
+
+        optionsCss = getEncodedString("rightBar.css");
+        homeCss = getEncodedString("leftBar.css");
+        contentCss = getEncodedString("content.css");
+
+        Log.d(debugTag, "Finshed reading css encoding");
     }
 
     private void loginSigarra()
     {
-        webView.loadUrl("javascript:(function(){" +
-                "if(document.getElementsByClassName('nomelogin').length != 0) {" +
-                "var u = document.getElementById('user').value = '" + "';" +
-                "var p = document.getElementById('pass').value = '" + "';" +
-                "document.forms[0].submit()" +
-                "}})()");
+        Log.d(debugTag, "LOGIN ATTEMPT: " + username + " | " + password);
+        if(password != null && username != null)
+        {
+            webView.loadUrl("javascript:(function(){" +
+                    "if(document.getElementsByClassName('nomelogin').length == 0) {" +
+                    "var u = document.getElementById('user').value = '" + username + "';" +
+                    "var p = document.getElementById('pass').value = '" + password + "';" +
+                    "document.forms[0].submit();" +
+                    "}})()");
+        }
     }
 
     private void startInBrowser(String url)
@@ -111,23 +235,26 @@ public class MainActivity extends AppCompatActivity {
 
     private void injectCSS(String encoded)
     {
-        try
-        {
-            webView.loadUrl(
-                    "javascript:(function() {" +
-                    "var parent = document.getElementsByTagName('head').item(0);" +
-                    "var style = document.createElement('style');" +
-                    "style.setAttribute('id', 'customcss');" +
-                    "style.type = 'text/css';" +
-                    // Tell the browser to BASE64-decode the string into your script !!!
-                    "style.innerHTML = window.atob('" + encoded + "');" +
-                    "parent.appendChild(style)" +
-                    "})()");
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
+        webView.loadUrl(
+                "javascript:(function() {" +
+                "var parent = document.getElementsByTagName('head').item(0);" +
+                "var style = document.createElement('style');" +
+                "style.setAttribute('id', 'customcss');" +
+                "style.type = 'text/css';" +
+                // Tell the browser to BASE64-decode the string into your script !!!
+                "style.innerHTML = window.atob('" + encoded + "');" +
+                "parent.prepend(style)" +
+                "})()");
+    }
+
+    private void checkCssLoad()
+    {
+        webView.loadUrl("javascript:(function() {" +
+                "if(document.getElementById('customcss') != null)" +
+                "{Android.cssLoaded();}" +
+                "else" +
+                "{Android.cssNotLoaded();}" +
+                "})()");
     }
 
     private void removeCSS()
@@ -146,21 +273,113 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void leftBar(View v)
+    private void populateBottomBar()
     {
-        removeCSS();
-        injectCSS(leftCss);
+        AHBottomNavigationItem item1 = new AHBottomNavigationItem(R.string.home, R.drawable.ic_menu, R.color.colorPrimary);
+        AHBottomNavigationItem item2 = new AHBottomNavigationItem(R.string.content, R.drawable.ic_web_asset, R.color.colorPrimary);
+        AHBottomNavigationItem item3 = new AHBottomNavigationItem(R.string.options, R.drawable.ic_menu, R.color.colorPrimary);
+
+        bottomNavigation.addItem(item1);
+        bottomNavigation.addItem(item2);
+        bottomNavigation.addItem(item3);
+        bottomNavigation.setAccentColor(Color.parseColor("#8c2d19"));
+
+        bottomNavigation.disableItemAtPosition(1);
+        bottomNavigation.disableItemAtPosition(2);
+
+        bottomNavigation.setOnTabSelectedListener(new AHBottomNavigation.OnTabSelectedListener()
+        {
+            @Override
+            public boolean onTabSelected(int position, boolean wasSelected)
+            {
+                switch (position)
+                {
+                    case 0:
+                        removeCSS();
+                        injectCSS(homeCss);
+                        break;
+                    case 1:
+                        removeCSS();
+                        injectCSS(contentCss);
+                        break;
+                    case 2:
+                        removeCSS();
+                        injectCSS(optionsCss);
+                        break;
+                }
+                return true;
+            }
+        });
     }
 
-    public void rightBar(View v)
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
     {
-        removeCSS();
-        injectCSS(rightCss);
+        if (requestCode == 1)
+        {
+            if(resultCode == Activity.RESULT_OK)
+            {
+                username = data.getStringExtra("username");
+                password = data.getStringExtra("password");
+                loginSigarra();
+            }
+            else if(resultCode == Activity.RESULT_CANCELED)
+            {
+                username = null;
+                password = null;
+            }
+        }
     }
 
-    public void content(View v)
+    public void stopLoading()
     {
-        removeCSS();
-        injectCSS(contentCss);
+        Log.d(debugTag, "Finished loading page");
+        webView.postDelayed(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                webView.setVisibility(View.VISIBLE);
+                swipeContainer.setRefreshing(false);
+            }
+        }, 1000);
+    }
+
+    public void reload()
+    {
+        webView.reload();
+    }
+
+    public class WebAppInterface
+    {
+        MainActivity activity;
+
+        WebAppInterface(MainActivity a) {
+            activity = a;
+        }
+
+        @JavascriptInterface
+        public void cssLoaded()
+        {
+            activity.runOnUiThread(new Runnable()
+            {
+                public void run()
+                {
+                    activity.stopLoading();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void cssNotLoaded()
+        {
+            activity.runOnUiThread(new Runnable()
+            {
+                public void run()
+                {
+                    activity.reload();
+                }
+            });
+        }
     }
 }

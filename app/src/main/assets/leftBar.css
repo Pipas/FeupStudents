@@ -14,11 +14,15 @@
     display: none !important;
 }
 
+div.saltar {
+    display: none !important;
+}
+
 div#colunaprincipal {
-    margin: 0;
-    width: 100%;
-    display: flex;
-    flex-direction: column-reverse;
+    margin: 0 !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column-reverse !important;
 }
 
 div#menu-navegacao-conteudo ul li {
@@ -33,7 +37,7 @@ div#menu-navegacao-conteudo ul li a:link {
 }
 
 div#caixa-validacao-cabecalho {
-    font-size: 24px;
+    font-size: 24px !important;
     height: 56px;
     line-height: 46.4px;
 }

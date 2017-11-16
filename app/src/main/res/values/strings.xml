@@ -1,3 +1,9 @@
 <resources>
-    <string name="app_name">FeupStudents</string>
+    <string name="app_name">FEUP for Students</string>
+    <string name="home">Inicio</string>
+    <string name="content">Conteudo</string>
+    <string name="options">Opções</string>
+    <string name="preference_file_key">settings_file</string>
+    <string name="saved_username">saved_username</string>
+    <string name="saved_password">saved_password</string>
 </resources>

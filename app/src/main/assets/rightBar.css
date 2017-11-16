@@ -28,16 +28,20 @@ div#colunaprincipal {
     display: none !important;
 }
 
+div.saltar {
+    display: none !important;
+}
+
 div.caixa-opcoes-cabecalho {
     height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 16px !important;
 }
 
 div.caixa-opcoes-conteudo ul{
-    padding: 0;
+    padding: 0 !important;
 }
 
 div.caixa-opcoes-conteudo ul li{

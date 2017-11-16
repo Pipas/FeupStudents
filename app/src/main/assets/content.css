@@ -17,3 +17,7 @@
 div#colunaprincipal {
     display: none !important;
 }
+
+div.saltar {
+    display: none !important;
+}

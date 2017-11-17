@@ -1,23 +1,34 @@
 package software.pipas.feupstudents;
 
+import android.Manifest;
 import android.app.Activity;
+import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Environment;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
+import android.webkit.CookieManager;
+import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
+import android.webkit.URLUtil;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.widget.Toast;
 
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigation;
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigationItem;
@@ -32,9 +43,12 @@ import com.mikepenz.materialdrawer.model.SecondaryDrawerItem;
 import com.mikepenz.materialdrawer.model.SectionDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
+import com.yarolegovich.lovelydialog.LovelyStandardDialog;
+import com.yarolegovich.lovelydialog.LovelyTextInputDialog;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity
 {
@@ -45,13 +59,16 @@ public class MainActivity extends AppCompatActivity
     private ObservableWebView webView;
     private SwipeRefreshLayout swipeContainer;
     private Drawer navDrawer;
-    private AccountHeader navDrawerHeader;
 
     private String optionsCss, homeCss, contentCss, username, password;
     private int previousT = 0;
     private Boolean isLoggedIn = false;
     private Boolean animating = false;
     private Boolean loginAttempt = false;
+    private Boolean firstLoad = true;
+
+    private DownloadRequest downloadRequest;
+    private BookmarkDatabase db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -76,9 +93,11 @@ public class MainActivity extends AppCompatActivity
 
         setSwipeContainerListener();
 
-        addAWebViewClient();
+        addWebViewClient();
 
         setWebViewScrollListener();
+
+        setWebViewDownloadListener();
 
         Log.d(debugTag, "Started loading page");
         webView.loadUrl("https://sigarra.up.pt/feup/pt/web_page.inicial");
@@ -95,7 +114,7 @@ public class MainActivity extends AppCompatActivity
         else
             profile = new ProfileDrawerItem().withName("Login Inválido").withEmail("Login Inválido");
 
-        navDrawerHeader = new AccountHeaderBuilder()
+        AccountHeader navDrawerHeader = new AccountHeaderBuilder()
                 .withActivity(this)
                 .withCompactStyle(true)
                 .withHeaderBackground(R.drawable.header)
@@ -109,11 +128,12 @@ public class MainActivity extends AppCompatActivity
                 .withAccountHeader(navDrawerHeader)
                 .withToolbar(toolbar)
                 .addDrawerItems(
-                        new PrimaryDrawerItem().withIdentifier(1).withName("Inicio").withIcon(FontAwesome.Icon.faw_home),
-                        new PrimaryDrawerItem().withIdentifier(2).withName("Adicionar").withIcon(FontAwesome.Icon.faw_plus).withSelectable(false),
+                        new PrimaryDrawerItem().withIdentifier(1).withName(R.string.home).withIcon(FontAwesome.Icon.faw_home),
+                        new PrimaryDrawerItem().withIdentifier(2).withName(R.string.add).withIcon(FontAwesome.Icon.faw_plus).withSelectable(false),
                         new SectionDrawerItem().withName(R.string.app_name),
-                        new SecondaryDrawerItem().withIdentifier(3).withName("GitHub").withIcon(FontAwesome.Icon.faw_github).withSelectable(false),
-                        new SecondaryDrawerItem().withIdentifier(4).withName("Contacto").withIcon(FontAwesome.Icon.faw_envelope).withSelectable(false)
+                        new SecondaryDrawerItem().withIdentifier(3).withName(R.string.github).withIcon(FontAwesome.Icon.faw_github).withSelectable(false),
+                        new SecondaryDrawerItem().withIdentifier(4).withName(R.string.feedback).withIcon(FontAwesome.Icon.faw_envelope).withSelectable(false),
+                        new SecondaryDrawerItem().withIdentifier(5).withName(R.string.about).withIcon(FontAwesome.Icon.faw_question_circle).withSelectable(false)
                 )
                 .withSelectedItem(1)
                 .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener()
@@ -121,15 +141,72 @@ public class MainActivity extends AppCompatActivity
                     @Override
                     public boolean onItemClick(View view, int position, IDrawerItem drawerItem)
                     {
-                        if(drawerItem.getIdentifier() == 2)
+                        final int fPosition = position;
+                        if(isLoggedIn)
                         {
-                            navDrawer.addItemAtPosition(new PrimaryDrawerItem().withIdentifier(1).withName("Novo").withIcon(FontAwesome.Icon.faw_file), 2);
+                            if(drawerItem.getIdentifier() == 1)
+                                webView.loadUrl("https://sigarra.up.pt/feup/pt/web_page.inicial");
+                            else if(drawerItem.getIdentifier() == 2)
+                            {
+                                new LovelyTextInputDialog(MainActivity.this)
+                                        .setTopColorRes(R.color.primary)
+                                        .setTitle(R.string.add_favorite)
+                                        .setMessage("Nome do favoito\n\n" + webView.getUrl())
+                                        .setInputFilter(R.string.invalid_name, new LovelyTextInputDialog.TextFilter()
+                                        {
+                                            @Override
+                                            public boolean check(String text)
+                                            {
+                                                return text.matches("\\w+");
+                                            }
+                                        })
+                                        .setConfirmButton(android.R.string.ok, new LovelyTextInputDialog.OnTextInputConfirmListener()
+                                        {
+                                            @Override
+                                            public void onTextInputConfirmed(String text)
+                                            {
+                                                Bookmark bookmark = new Bookmark(text, webView.getUrl());
+                                                db.addBookmark(bookmark);
+                                                navDrawer.addItemAtPosition(new PrimaryDrawerItem().withIdentifier(6).withName(text).withIcon(FontAwesome.Icon.faw_file), 2);
+                                                navDrawer.setSelectionAtPosition(fPosition);
+                                            }
+                                        })
+                                        .show();
+                            }
+                            else if(drawerItem.getIdentifier() == 3)
+                                startInBrowser("https://github.com/pipas/feupstudents");
+                            else if(drawerItem.getIdentifier() == 4)
+                                startInBrowser("mailto:pipas.software@gmail.com");
+                            else if(drawerItem.getIdentifier() == 5)
+                                new LovelyStandardDialog(MainActivity.this)
+                                        .setTopColorRes(R.color.primary)
+                                        .setTitle(getString(R.string.app_name) + " v" + BuildConfig.VERSION_NAME)
+                                        .setMessage(getString(R.string.about_text))
+                                        .setPositiveButton(android.R.string.ok, null)
+                                        .show();
+                            else
+                            {
+                                Bookmark bookmark = db.getBookmark(fPosition - 1);
+                                webView.loadUrl(bookmark.getUrl());
+                            }
                         }
+                        else
+                        {
+                            Toast.makeText(getApplicationContext(), getString(R.string.logging_in), Toast.LENGTH_SHORT).show();
+                            navDrawer.setSelectionAtPosition(1);
+                        }
+
                         return false;
                     }
                 })
                 .build();
 
+        db = new BookmarkDatabase(this);
+        ArrayList<Bookmark> bookmarks = db.getAllBookmarks();
+        for(Bookmark bookmark : bookmarks)
+        {
+            navDrawer.addItemAtPosition(new PrimaryDrawerItem().withIdentifier(6).withName(bookmark.getTitle()).withIcon(FontAwesome.Icon.faw_file), 2);
+        }
     }
 
     private void checkLoginCredentials()
@@ -159,7 +236,6 @@ public class MainActivity extends AppCompatActivity
             public void onRefresh()
             {
                 Log.d(debugTag, "Refreshing");
-                webView.setVisibility(View.GONE);
                 webView.reload();
             }
         });
@@ -167,7 +243,7 @@ public class MainActivity extends AppCompatActivity
         swipeContainer.setColorSchemeResources(R.color.colorPrimary);
     }
 
-    private void addAWebViewClient()
+    private void addWebViewClient()
     {
         webView.setWebViewClient(new WebViewClient()
         {
@@ -176,6 +252,9 @@ public class MainActivity extends AppCompatActivity
             {
                 webView.setVisibility(View.GONE);
                 swipeContainer.setRefreshing(true);
+                bottomNavigation.disableItemAtPosition(0);
+                bottomNavigation.disableItemAtPosition(1);
+                bottomNavigation.disableItemAtPosition(2);
                 super.onPageStarted(view, url, favicon);
             }
 
@@ -184,14 +263,23 @@ public class MainActivity extends AppCompatActivity
             {
                 Log.d(debugTag, "Finished loading url: " + url);
 
-                if(!isLoggedIn)
+                if(!isLoggedIn && !loginAttempt)
                 {
                     checkLogin();
+                }
+                else if(url.contains("vld_entidades_geral.entidade_pagina") || url.contains("vld_validacao"))
+                {
+                    super.onPageFinished(view, url);
+                    return;
+                }
+                else if(firstLoad)
+                {
+                    injectCSS(homeCss);
+                    checkCssLoad();
                 }
                 else
                 {
                     injectCSS(contentCss);
-                    bottomNavigation.setCurrentItem(1);
                     checkCssLoad();
                 }
 
@@ -361,9 +449,6 @@ public class MainActivity extends AppCompatActivity
         bottomNavigation.addItem(item3);
         bottomNavigation.setAccentColor(Color.parseColor("#8c2d19"));
 
-        bottomNavigation.disableItemAtPosition(1);
-        bottomNavigation.disableItemAtPosition(2);
-
         bottomNavigation.setOnTabSelectedListener(new AHBottomNavigation.OnTabSelectedListener()
         {
             @Override
@@ -398,7 +483,6 @@ public class MainActivity extends AppCompatActivity
             {
                 username = data.getStringExtra("username");
                 password = data.getStringExtra("password");
-                loginSigarra();
             }
             else if(resultCode == Activity.RESULT_CANCELED)
             {
@@ -416,8 +500,19 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void run()
             {
+                if(firstLoad)
+                {
+                    bottomNavigation.setCurrentItem(0);
+                    firstLoad = false;
+                }
+                else
+                    bottomNavigation.setCurrentItem(1);
+
                 webView.setVisibility(View.VISIBLE);
                 swipeContainer.setRefreshing(false);
+                bottomNavigation.enableItemAtPosition(0);
+                bottomNavigation.enableItemAtPosition(1);
+                bottomNavigation.enableItemAtPosition(2);
             }
         }, 1000);
     }
@@ -432,22 +527,24 @@ public class MainActivity extends AppCompatActivity
         if(lg)
         {
             Log.d(debugTag, "User is logged in");
-            injectCSS(homeCss);
-            bottomNavigation.setCurrentItem(0);
-            bottomNavigation.enableItemAtPosition(1);
-            bottomNavigation.enableItemAtPosition(2);
+            enableNavigation();
             isLoggedIn = true;
-            checkCssLoad();
         }
         else
         {
             Log.d(debugTag, "User is not logged in");
-            if(!loginAttempt)
+            if(!loginAttempt && password != null && username != null)
             {
                 loginSigarra();
                 loginAttempt = true;
             }
         }
+    }
+
+    private void enableNavigation()
+    {
+        injectCSS(homeCss);
+        checkCssLoad();
     }
 
     public class WebAppInterface
@@ -504,6 +601,59 @@ public class MainActivity extends AppCompatActivity
                     activity.isLoggedIn(false);
                 }
             });
+        }
+    }
+
+    private void setWebViewDownloadListener()
+    {
+        webView.setDownloadListener(new DownloadListener()
+        {
+            @Override
+            public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
+                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+                {
+                    downloadRequest = new DownloadRequest(url, userAgent, contentDisposition, mimeType);
+                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                }
+                else
+                {
+                    startDownload(new DownloadRequest(url, userAgent, contentDisposition, mimeType));
+                }
+            }
+        });
+    }
+
+    private void startDownload(DownloadRequest downloadRequest)
+    {
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(downloadRequest.getUrl()));
+
+        request.setMimeType(downloadRequest.getMimeType());
+        String cookies = CookieManager.getInstance().getCookie(downloadRequest.getUrl());
+        request.addRequestHeader("cookie", cookies);
+        request.addRequestHeader("User-Agent", downloadRequest.getUserAgent());
+        request.setDescription(getString(R.string.downloading_description));
+        request.setTitle(URLUtil.guessFileName(downloadRequest.getUrl(), downloadRequest.getContentDisposition(), downloadRequest.getMimeType()));
+        request.allowScanningByMediaScanner();
+        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, URLUtil.guessFileName(downloadRequest.getUrl(), downloadRequest.getContentDisposition(), downloadRequest.getMimeType()));
+        DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+        dm.enqueue(request);
+        Toast.makeText(getApplicationContext(), getString(R.string.downloading_file), Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults)
+    {
+        if(requestCode == 1)
+        {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+            {
+                startDownload(downloadRequest);
+            }
+            else
+            {
+                startInBrowser(downloadRequest.getUrl());
+            }
         }
     }
 }

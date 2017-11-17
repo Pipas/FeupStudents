@@ -1,8 +1,29 @@
 <resources>
     <string name="app_name">FEUP for Students</string>
-    <string name="home">Inicio</string>
-    <string name="content">Conteudo</string>
+
+
+    <string name="home">Início</string>
+    <string name="content">Conteúdo</string>
     <string name="options">Opções</string>
+
+    <string name="add">Adicionar</string>
+    <string name="github">GitHub</string>
+    <string name="feedback">Feedback</string>
+    <string name="about">Sobre</string>
+    <string name="credits">Créditos</string>
+
+    <string name="add_favorite">Adicionar Favorito</string>
+    <string name="invalid_name">Nome Inválido</string>
+    <string name="about_text">Desenvolvido por:\n\t\t\tPaulo Correia\n\n
+        Agradecimentos:\n\t\t\tAna Miranda\n\t\t\tAntónio Carreio\n\t\t\tSérgio Faria\n\n
+        Aplicação não afiliada com a Universidade do Porto ou a FEUP.\n
+        Para mais informações consultar a página no GitHub do projecto.</string>
+
+    <string name="downloading_file">A iniciar a transferencia</string>
+    <string name="downloading_description">A transferir...</string>
+    <string name="logging_in">A fazer login...</string>
+
+
     <string name="preference_file_key">settings_file</string>
     <string name="saved_username">saved_username</string>
     <string name="saved_password">saved_password</string>

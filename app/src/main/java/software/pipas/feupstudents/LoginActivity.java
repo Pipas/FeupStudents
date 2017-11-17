@@ -46,8 +46,6 @@ public class LoginActivity extends AppCompatActivity
                     return;
                 }
 
-                Log.d("FEUPDEBUG", "Set preferences " + sUsername + " " + sPassword);
-
                 SharedPreferences sharedPref = LoginActivity.this.getSharedPreferences("gameSettings", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sharedPref.edit();
 

@@ -45,19 +45,21 @@ public class BookmarkDatabase extends SQLiteOpenHelper
         this.onCreate(db);
     }
 
-    public void addBookmark(Bookmark bookmark)
+    public long addBookmark(Bookmark bookmark)
     {
         Log.d("FEUPDEBUG", "Added bookmark: " + bookmark.toString());
 
         SQLiteDatabase db = this.getWritableDatabase();
 
         ContentValues values = new ContentValues();
-        values.put(KEY_TITLE, bookmark.getTitle()); // get title
-        values.put(KEY_URL, bookmark.getUrl()); // get author
+        values.put(KEY_TITLE, bookmark.getTitle());
+        values.put(KEY_URL, bookmark.getUrl());
 
-        db.insert(TABLE_BOOKMARKS, null, values);
+        long id = db.insert(TABLE_BOOKMARKS, null, values);
 
         db.close();
+
+        return id;
     }
 
     public Bookmark getBookmark(int id)

@@ -14,6 +14,7 @@
 
     <string name="add_favorite">Adicionar Favorito</string>
     <string name="invalid_name">Nome Inválido</string>
+    <string name="cancel">Cancelar</string>
     <string name="about_text">Desenvolvido por:\n\t\t\tPaulo Correia\n\n
         Agradecimentos:\n\t\t\tAna Miranda\n\t\t\tAntónio Carreio\n\t\t\tSérgio Faria\n\n
         Aplicação não afiliada com a Universidade do Porto ou a FEUP.\n
@@ -23,6 +24,11 @@
     <string name="downloading_description">A transferir...</string>
     <string name="logging_in">A fazer login...</string>
 
+    <string name="remove_bookmark">Remover Favorito</string>
+    <string name="remove_bookmark_start">Deseja remover "</string>
+    <string name="remove_bookmark_end">" da barra de favoritos?</string>
+    <string name="yes">Sim</string>
+    <string name="no">Não</string>
 
     <string name="preference_file_key">settings_file</string>
     <string name="saved_username">saved_username</string>

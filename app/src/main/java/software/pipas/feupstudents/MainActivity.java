@@ -28,6 +28,7 @@ import android.webkit.URLUtil;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.support.v7.widget.Toolbar;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigation;
@@ -59,6 +60,7 @@ public class MainActivity extends AppCompatActivity
     private ObservableWebView webView;
     private SwipeRefreshLayout swipeContainer;
     private Drawer navDrawer;
+    private RelativeLayout removeBookmark;
 
     private String optionsCss, homeCss, contentCss, username, password;
     private int previousT = 0;
@@ -66,6 +68,10 @@ public class MainActivity extends AppCompatActivity
     private Boolean animating = false;
     private Boolean loginAttempt = false;
     private Boolean firstLoad = true;
+    private Boolean loginPrompt = false;
+
+    private ArrayList<Bookmark> bookmarks;
+    private Bookmark toRemove;
 
     private DownloadRequest downloadRequest;
     private BookmarkDatabase db;
@@ -99,8 +105,57 @@ public class MainActivity extends AppCompatActivity
 
         setWebViewDownloadListener();
 
-        Log.d(debugTag, "Started loading page");
-        webView.loadUrl("https://sigarra.up.pt/feup/pt/web_page.inicial");
+        setRemoveBackgroundButtonListener();
+
+        if(!loginPrompt)
+        {
+            webView.loadUrl("https://sigarra.up.pt/feup/pt/web_page.inicial");
+            Log.d(debugTag, "Started loading page");
+        }
+    }
+
+    private void setRemoveBackgroundButtonListener()
+    {
+        removeBookmark = findViewById(R.id.removeBookmark);
+        removeBookmark.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View view)
+            {
+                if(bookmarks == null)
+                    bookmarks = db.getAllBookmarks();
+                for(Bookmark bookmark : bookmarks)
+                {
+                    if(bookmark.getUrl().equals(webView.getUrl()))
+                    {
+                         toRemove = bookmark;
+                    }
+                }
+
+                if(toRemove == null)
+                    toRemove = new Bookmark("Erro a encontrar favorito", "");
+
+                new LovelyStandardDialog(MainActivity.this)
+                        .setTopColorRes(R.color.primary)
+                        .setTitle(R.string.remove_bookmark)
+                        .setMessage(getString(R.string.remove_bookmark_start) + toRemove.getTitle() + getString(R.string.remove_bookmark_end))
+                        .setPositiveButton(R.string.yes, new View.OnClickListener()
+                        {
+                            @Override
+                            public void onClick(View view)
+                            {
+                                db.deleteBookmark(toRemove);
+                                navDrawer.removeItem(toRemove.getId());
+                                removeBookmark.setVisibility(View.GONE);
+                                navDrawer.setSelection(100001);
+                                bookmarks = db.getAllBookmarks();
+                            }
+                        })
+                        .setNegativeButton(R.string.no, null)
+                        .show();
+            }
+        });
+        removeBookmark.setVisibility(View.GONE);
     }
 
     private void initNavDrawer()
@@ -128,56 +183,58 @@ public class MainActivity extends AppCompatActivity
                 .withAccountHeader(navDrawerHeader)
                 .withToolbar(toolbar)
                 .addDrawerItems(
-                        new PrimaryDrawerItem().withIdentifier(1).withName(R.string.home).withIcon(FontAwesome.Icon.faw_home),
-                        new PrimaryDrawerItem().withIdentifier(2).withName(R.string.add).withIcon(FontAwesome.Icon.faw_plus).withSelectable(false),
+                        new PrimaryDrawerItem().withIdentifier(100001).withName(R.string.home).withIcon(FontAwesome.Icon.faw_home),
+                        new PrimaryDrawerItem().withIdentifier(100002).withName(R.string.add).withIcon(FontAwesome.Icon.faw_plus).withSelectable(false),
                         new SectionDrawerItem().withName(R.string.app_name),
-                        new SecondaryDrawerItem().withIdentifier(3).withName(R.string.github).withIcon(FontAwesome.Icon.faw_github).withSelectable(false),
-                        new SecondaryDrawerItem().withIdentifier(4).withName(R.string.feedback).withIcon(FontAwesome.Icon.faw_envelope).withSelectable(false),
-                        new SecondaryDrawerItem().withIdentifier(5).withName(R.string.about).withIcon(FontAwesome.Icon.faw_question_circle).withSelectable(false)
+                        new SecondaryDrawerItem().withIdentifier(100003).withName(R.string.github).withIcon(FontAwesome.Icon.faw_github).withSelectable(false),
+                        new SecondaryDrawerItem().withIdentifier(100004).withName(R.string.feedback).withIcon(FontAwesome.Icon.faw_envelope).withSelectable(false),
+                        new SecondaryDrawerItem().withIdentifier(100005).withName(R.string.about).withIcon(FontAwesome.Icon.faw_question_circle).withSelectable(false)
                 )
                 .withSelectedItem(1)
                 .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener()
                 {
                     @Override
-                    public boolean onItemClick(View view, int position, IDrawerItem drawerItem)
+                    public boolean onItemClick(View view, final int position, IDrawerItem drawerItem)
                     {
-                        final int fPosition = position;
                         if(isLoggedIn)
                         {
-                            if(drawerItem.getIdentifier() == 1)
+                            if(drawerItem.getIdentifier() == 100001)
                                 webView.loadUrl("https://sigarra.up.pt/feup/pt/web_page.inicial");
-                            else if(drawerItem.getIdentifier() == 2)
+                            else if(drawerItem.getIdentifier() == 100002)
                             {
                                 new LovelyTextInputDialog(MainActivity.this)
                                         .setTopColorRes(R.color.primary)
                                         .setTitle(R.string.add_favorite)
-                                        .setMessage("Nome do favoito\n\n" + webView.getUrl())
+                                        .setMessage(webView.getTitle().replaceAll("FEUP\\s*-\\s*", ""))
+                                        .setInitialInput(webView.getTitle().replaceAll("FEUP\\s*-\\s*", ""))
                                         .setInputFilter(R.string.invalid_name, new LovelyTextInputDialog.TextFilter()
                                         {
                                             @Override
                                             public boolean check(String text)
                                             {
-                                                return text.matches("\\w+");
+                                                return !text.isEmpty();
                                             }
                                         })
-                                        .setConfirmButton(android.R.string.ok, new LovelyTextInputDialog.OnTextInputConfirmListener()
+                                        .setConfirmButton(R.string.add, new LovelyTextInputDialog.OnTextInputConfirmListener()
                                         {
                                             @Override
                                             public void onTextInputConfirmed(String text)
                                             {
                                                 Bookmark bookmark = new Bookmark(text, webView.getUrl());
-                                                db.addBookmark(bookmark);
-                                                navDrawer.addItemAtPosition(new PrimaryDrawerItem().withIdentifier(6).withName(text).withIcon(FontAwesome.Icon.faw_file), 2);
-                                                navDrawer.setSelectionAtPosition(fPosition);
+                                                long id = db.addBookmark(bookmark);
+                                                navDrawer.addItemAtPosition(new PrimaryDrawerItem().withIdentifier(id).withName(text).withIcon(FontAwesome.Icon.faw_file), 2);
+                                                navDrawer.setSelectionAtPosition(2, false);
+                                                bookmarks = db.getAllBookmarks();
                                             }
                                         })
+                                        .setNegativeButton(R.string.cancel, null)
                                         .show();
                             }
-                            else if(drawerItem.getIdentifier() == 3)
+                            else if(drawerItem.getIdentifier() == 100003)
                                 startInBrowser("https://github.com/pipas/feupstudents");
-                            else if(drawerItem.getIdentifier() == 4)
+                            else if(drawerItem.getIdentifier() == 100004)
                                 startInBrowser("mailto:pipas.software@gmail.com");
-                            else if(drawerItem.getIdentifier() == 5)
+                            else if(drawerItem.getIdentifier() == 100005)
                                 new LovelyStandardDialog(MainActivity.this)
                                         .setTopColorRes(R.color.primary)
                                         .setTitle(getString(R.string.app_name) + " v" + BuildConfig.VERSION_NAME)
@@ -186,7 +243,7 @@ public class MainActivity extends AppCompatActivity
                                         .show();
                             else
                             {
-                                Bookmark bookmark = db.getBookmark(fPosition - 1);
+                                Bookmark bookmark = db.getBookmark((int) drawerItem.getIdentifier());
                                 webView.loadUrl(bookmark.getUrl());
                             }
                         }
@@ -196,17 +253,19 @@ public class MainActivity extends AppCompatActivity
                             navDrawer.setSelectionAtPosition(1);
                         }
 
-                        return false;
+                        navDrawer.closeDrawer();
+                        return true;
                     }
                 })
                 .build();
 
         db = new BookmarkDatabase(this);
-        ArrayList<Bookmark> bookmarks = db.getAllBookmarks();
+        bookmarks = db.getAllBookmarks();
         for(Bookmark bookmark : bookmarks)
         {
-            navDrawer.addItemAtPosition(new PrimaryDrawerItem().withIdentifier(6).withName(bookmark.getTitle()).withIcon(FontAwesome.Icon.faw_file), 2);
+            navDrawer.addItemAtPosition(new PrimaryDrawerItem().withIdentifier(bookmark.getId()).withName(bookmark.getTitle()).withIcon(FontAwesome.Icon.faw_file), 2);
         }
+        navDrawer.setSelectionAtPosition(1, false);
     }
 
     private void checkLoginCredentials()
@@ -218,8 +277,10 @@ public class MainActivity extends AppCompatActivity
         if(password != null && username != null)
             Log.d(debugTag, "Valid credentials");
         else
+        {
+            loginPrompt = true;
             Log.d(debugTag, "Null credentials");
-
+        }
 
         if(username == null && password == null)
         {
@@ -263,6 +324,9 @@ public class MainActivity extends AppCompatActivity
             {
                 Log.d(debugTag, "Finished loading url: " + url);
 
+                if (removeBookmark.getVisibility() == View.VISIBLE)
+                    removeBookmark.setVisibility(View.GONE);
+
                 if(!isLoggedIn && !loginAttempt)
                 {
                     checkLogin();
@@ -281,6 +345,17 @@ public class MainActivity extends AppCompatActivity
                 {
                     injectCSS(contentCss);
                     checkCssLoad();
+                }
+
+                if(bookmarks == null)
+                    bookmarks = db.getAllBookmarks();
+                else
+                {
+                    for(Bookmark bookmark : bookmarks)
+                    {
+                        if(url.equals(bookmark.getUrl()))
+                            removeBookmark.setVisibility(View.VISIBLE);
+                    }
                 }
 
                 super.onPageFinished(view, url);
@@ -489,6 +564,9 @@ public class MainActivity extends AppCompatActivity
                 username = null;
                 password = null;
             }
+
+            loginPrompt = false;
+            webView.loadUrl("https://sigarra.up.pt/feup/pt/web_page.inicial");
         }
     }
 
@@ -537,6 +615,10 @@ public class MainActivity extends AppCompatActivity
             {
                 loginSigarra();
                 loginAttempt = true;
+            }
+            else if(loginAttempt)
+            {
+                isLoggedIn = true;
             }
         }
     }

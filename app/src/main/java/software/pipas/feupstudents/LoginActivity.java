@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -12,6 +13,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.yarolegovich.lovelydialog.LovelyStandardDialog;
 
 public class LoginActivity extends AppCompatActivity
 {
@@ -37,21 +40,14 @@ public class LoginActivity extends AppCompatActivity
 
                 if (sUsername.matches(""))
                 {
-                    Toast.makeText(LoginActivity.this, "Username vazio", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(LoginActivity.this, R.string.no_username, Toast.LENGTH_SHORT).show();
                     return;
                 }
                 else if (sPassword.matches(""))
                 {
-                    Toast.makeText(LoginActivity.this, "Password vazia", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(LoginActivity.this, R.string.no_password, Toast.LENGTH_SHORT).show();
                     return;
                 }
-
-                SharedPreferences sharedPref = LoginActivity.this.getSharedPreferences("gameSettings", Context.MODE_PRIVATE);
-                SharedPreferences.Editor editor = sharedPref.edit();
-
-                editor.putString(getString(R.string.saved_username), sUsername);
-                editor.putString(getString(R.string.saved_password), sPassword);
-                editor.apply();
 
                 Intent returnIntent = new Intent();
                 returnIntent.putExtra("username", sUsername);
@@ -61,15 +57,36 @@ public class LoginActivity extends AppCompatActivity
                 finish();
             }
         });
-        TextView skipLogin = findViewById(R.id.skipLogin);
-        skipLogin.setOnClickListener(new View.OnClickListener()
-        {
+        TextView isItSafe = findViewById(R.id.is_it_safe);
+        isItSafe.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v)
+            public void onClick(View view)
             {
-                Intent returnIntent = new Intent();
-                setResult(Activity.RESULT_CANCELED,returnIntent);
-                finish();
+                new LovelyStandardDialog(LoginActivity.this)
+                        .setTopColorRes(R.color.primary)
+                        .setTitle(R.string.is_it_safe)
+                        .setMessage(getString(R.string.is_it_safe_tooltip))
+                        .setPositiveButton(android.R.string.ok, null)
+                        .setNeutralButton(R.string.github, new View.OnClickListener()
+                        {
+                            @Override
+                            public void onClick(View view)
+                            {
+                                Intent i = new Intent(Intent.ACTION_VIEW);
+                                i.setData(Uri.parse("https://github.com/pipas/FeupStudents"));
+                                startActivity(i);
+                            }
+                        })
+                        .setNegativeButton(R.string.about, new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view)
+                            {
+                                Intent i = new Intent(Intent.ACTION_VIEW);
+                                i.setData(Uri.parse("https://developer.android.com/training/articles/keystore.html"));
+                                startActivity(i);
+                            }
+                        })
+                        .show();
             }
         });
     }

@@ -11,6 +11,8 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Environment;
+import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyProperties;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -44,12 +46,18 @@ import com.mikepenz.materialdrawer.model.SecondaryDrawerItem;
 import com.mikepenz.materialdrawer.model.SectionDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
+import com.q42.qlassified.Qlassified;
+import com.q42.qlassified.Storage.QlassifiedSharedPreferencesService;
 import com.yarolegovich.lovelydialog.LovelyStandardDialog;
 import com.yarolegovich.lovelydialog.LovelyTextInputDialog;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.ArrayList;
+
+import javax.crypto.KeyGenerator;
 
 public class MainActivity extends AppCompatActivity
 {
@@ -165,9 +173,9 @@ public class MainActivity extends AppCompatActivity
 
         IProfile profile;
         if(username != null)
-             profile = new ProfileDrawerItem().withName(username).withEmail(username+ "@fe.up.pt");
+             profile = new ProfileDrawerItem().withName(username).withEmail(username + "@fe.up.pt");
         else
-            profile = new ProfileDrawerItem().withName("Login Inválido").withEmail("Login Inválido");
+            profile = new ProfileDrawerItem().withName(R.string.no_login).withEmail(R.string.no_login);
 
         AccountHeader navDrawerHeader = new AccountHeaderBuilder()
                 .withActivity(this)
@@ -186,6 +194,7 @@ public class MainActivity extends AppCompatActivity
                         new PrimaryDrawerItem().withIdentifier(100001).withName(R.string.home).withIcon(FontAwesome.Icon.faw_home),
                         new PrimaryDrawerItem().withIdentifier(100002).withName(R.string.add).withIcon(FontAwesome.Icon.faw_plus).withSelectable(false),
                         new SectionDrawerItem().withName(R.string.app_name),
+                        new SecondaryDrawerItem().withIdentifier(100006).withName(R.string.change_login).withIcon(FontAwesome.Icon.faw_sign_in).withSelectable(false),
                         new SecondaryDrawerItem().withIdentifier(100003).withName(R.string.github).withIcon(FontAwesome.Icon.faw_github).withSelectable(false),
                         new SecondaryDrawerItem().withIdentifier(100004).withName(R.string.feedback).withIcon(FontAwesome.Icon.faw_envelope).withSelectable(false),
                         new SecondaryDrawerItem().withIdentifier(100005).withName(R.string.about).withIcon(FontAwesome.Icon.faw_question_circle).withSelectable(false)
@@ -241,6 +250,13 @@ public class MainActivity extends AppCompatActivity
                                         .setMessage(getString(R.string.about_text))
                                         .setPositiveButton(android.R.string.ok, null)
                                         .show();
+                            else if(drawerItem.getIdentifier() == 100006)
+                            {
+                                if(isLoggedIn)
+                                    logoutSigarra();
+                                Intent myIntent = new Intent(MainActivity.this, LoginActivity.class);
+                                startActivityForResult(myIntent, 1);
+                            }
                             else
                             {
                                 Bookmark bookmark = db.getBookmark((int) drawerItem.getIdentifier());
@@ -270,9 +286,11 @@ public class MainActivity extends AppCompatActivity
 
     private void checkLoginCredentials()
     {
-        SharedPreferences sharedPref = this.getSharedPreferences("gameSettings", Context.MODE_PRIVATE);
-        username = sharedPref.getString(getString(R.string.saved_username), null);
-        password = sharedPref.getString(getString(R.string.saved_password), null);
+        Qlassified.Service.start(this);
+        Qlassified.Service.setStorageService(new QlassifiedSharedPreferencesService(this, "data"));
+
+        username = Qlassified.Service.getString("username");
+        password = Qlassified.Service.getString("password");
 
         if(password != null && username != null)
             Log.d(debugTag, "Valid credentials");
@@ -331,7 +349,7 @@ public class MainActivity extends AppCompatActivity
                 {
                     checkLogin();
                 }
-                else if(url.contains("vld_entidades_geral.entidade_pagina") || url.contains("vld_validacao"))
+                else if(url.contains("vld_entidades_geral.entidade_pagina") || url.contains("vld_validacao") || (url.contains("hor_geral.estudantes_view?pv_fest_id") && !url.contains("pv_ano_lectivo")))
                 {
                     super.onPageFinished(view, url);
                     return;
@@ -438,6 +456,15 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    private void logoutSigarra()
+    {
+        Log.d(debugTag, "Logout attempt");
+        webView.loadUrl("javascript:(function(){" +
+                    "document.forms[0].submit();" +
+                    "})()");
+
+    }
+
     private void startInBrowser(String url)
     {
         Intent i = new Intent(Intent.ACTION_VIEW);
@@ -471,9 +498,8 @@ public class MainActivity extends AppCompatActivity
                 "var style = document.createElement('style');" +
                 "style.setAttribute('id', 'customcss');" +
                 "style.type = 'text/css';" +
-                // Tell the browser to BASE64-decode the string into your script !!!
                 "style.innerHTML = window.atob('" + encoded + "');" +
-                "parent.prepend(style)" +
+                "parent.appendChild(style)" +
                 "})()");
     }
 
@@ -558,6 +584,8 @@ public class MainActivity extends AppCompatActivity
             {
                 username = data.getStringExtra("username");
                 password = data.getStringExtra("password");
+                Qlassified.Service.put("username", username);
+                Qlassified.Service.put("password", password);
             }
             else if(resultCode == Activity.RESULT_CANCELED)
             {
@@ -566,6 +594,8 @@ public class MainActivity extends AppCompatActivity
             }
 
             loginPrompt = false;
+            loginAttempt = false;
+            isLoggedIn = false;
             webView.loadUrl("https://sigarra.up.pt/feup/pt/web_page.inicial");
         }
     }

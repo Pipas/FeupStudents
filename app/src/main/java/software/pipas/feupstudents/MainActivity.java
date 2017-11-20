@@ -77,6 +77,7 @@ public class MainActivity extends AppCompatActivity
     private Boolean loginAttempt = false;
     private Boolean firstLoad = true;
     private Boolean loginPrompt = false;
+    private Boolean wrongCredentials = false;
 
     private ArrayList<Bookmark> bookmarks;
     private Bookmark toRemove;
@@ -266,7 +267,6 @@ public class MainActivity extends AppCompatActivity
                         else
                         {
                             Toast.makeText(getApplicationContext(), getString(R.string.logging_in), Toast.LENGTH_SHORT).show();
-                            navDrawer.setSelectionAtPosition(1);
                         }
 
                         navDrawer.closeDrawer();
@@ -349,10 +349,25 @@ public class MainActivity extends AppCompatActivity
                 {
                     checkLogin();
                 }
-                else if(url.contains("vld_entidades_geral.entidade_pagina") || url.contains("vld_validacao") || (url.contains("hor_geral.estudantes_view?pv_fest_id") && !url.contains("pv_ano_lectivo")))
+                else if(url.contains("vld_entidades_geral.entidade_pagina") || (url.contains("hor_geral.estudantes_view?pv_fest_id") && !url.contains("pv_ano_lectivo")))
                 {
                     super.onPageFinished(view, url);
                     return;
+                }
+                else if(url.contains("vld_validacao"))
+                {
+                    webView.postDelayed(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            if(webView.getUrl().contains("vld_validacao"))
+                            {
+                                wrongCredentials = true;
+                                checkLogin();
+                            }
+                        }
+                    }, 10000);
                 }
                 else if(firstLoad)
                 {
@@ -645,6 +660,12 @@ public class MainActivity extends AppCompatActivity
             {
                 loginSigarra();
                 loginAttempt = true;
+            }
+            else if(wrongCredentials)
+            {
+                Toast.makeText(this, R.string.wrong_credentials, Toast.LENGTH_LONG).show();
+                isLoggedIn = true;
+                webView.loadUrl("https://sigarra.up.pt/feup/pt/web_page.inicial");
             }
             else if(loginAttempt)
             {

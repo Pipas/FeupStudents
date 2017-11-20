@@ -35,6 +35,7 @@
     <string name="downloading_file">A iniciar a transferencia</string>
     <string name="downloading_description">A transferir...</string>
     <string name="logging_in">A fazer login...</string>
+    <string name="wrong_credentials">Erro no login.\nPodes mudar os dados no menu lateral.</string>
 
     <string name="remove_bookmark">Remover Favorito</string>
     <string name="remove_bookmark_start">Deseja remover "</string>

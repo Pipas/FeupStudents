@@ -8,12 +8,12 @@ Uma aplicação para aceder ao site do SIGARRA da Faculdade de Engenharia da Uni
        alt="Android app on Google Play" width="200"/>
 </a>
 
-## Feautures
+## Features
 * Vizualização e navegação optimizadas para telemóvel
 * Login automático
 * Adicionar favoritos
- 
-## Segurança 
+
+## Segurança
 A aplicação não acede a nenhuma informação que se encontra no site do Sigarra, ao carregar a página é aplicado um ficheiro CSS costumizado que muda o estilo da página html.
 
 O Auto-login corre se a aplicação verificar que o utilizador não se encontra com sessão iniciada, e utiliza os dados encriptados introduzidos pelo utilizador para fazer login através de um simples script de JavaScript.

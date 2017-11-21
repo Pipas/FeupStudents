@@ -48,7 +48,6 @@ public class Bookmark
     @Override
     public String toString()
     {
-        return "Book [id=" + id + ", title=" + title + ", url=" + url
-                + "]";
+        return title;
     }
 }

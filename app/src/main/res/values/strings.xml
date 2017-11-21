@@ -20,6 +20,16 @@
     <string name="add">Adicionar</string>
     <string name="github">GitHub</string>
     <string name="change_login">Mudar Login</string>
+    <string name="search">Pesquisa</string>
+
+    <string name="search_students">Estudantes</string>
+    <string name="search_staff">Pessoal</string>
+    <string name="search_rooms">Salas</string>
+    <string name="search_schedules">Horários</string>
+    <string name="search_classes">Turmas</string>
+    <string name="search_ucs">Unidades Curriculares</string>
+
+    <string name="rate_us">Avaliar aplicação</string>
     <string name="feedback">Feedback</string>
     <string name="about">Sobre</string>
     <string name="credits">Créditos</string>
@@ -36,6 +46,9 @@
     <string name="downloading_description">A transferir...</string>
     <string name="logging_in">A fazer login...</string>
     <string name="wrong_credentials">Erro no login.\nPodes mudar os dados no menu lateral.</string>
+
+    <string name="exit">Sair da aplicação?</string>
+    <string name="exit_text">Deseja fechar a aplicação e voltar ao sistema operativo?</string>
 
     <string name="remove_bookmark">Remover Favorito</string>
     <string name="remove_bookmark_start">Deseja remover "</string>

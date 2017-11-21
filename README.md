@@ -3,13 +3,13 @@
 Uma aplicação para aceder ao site do SIGARRA da Faculdade de Engenharia da Universidade do Porto, optimizado para telemóveis.
 
 ## Download
-<a href="https://play.google.com/store/apps/">
+<a href="https://play.google.com/store/apps/details?id=software.pipas.feupstudents">
   <img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png"
        alt="Android app on Google Play" width="200"/>
 </a>
 
 ## Features
-* Vizualização e navegação optimizadas para telemóvel
+* Visualização e navegação optimizadas para telemóvel
 * Login automático
 * Adicionar favoritos
 
@@ -31,3 +31,5 @@ O código da aplicação encontra-se disponivel na sua totalidade neste reposit�
 
 ## Autor
  * **Paulo Correia** - MIEIC FEUP
+ 
+ Aplicação não afiliada com a FEUP ou com a Universidade do Porto.

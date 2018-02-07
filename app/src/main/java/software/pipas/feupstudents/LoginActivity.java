@@ -21,11 +21,16 @@ public class LoginActivity extends AppCompatActivity
     private EditText inputPassword;
     private EditText inputUser;
 
+    SharedPreferences prefs = null;
+    private Boolean firstRun = true;
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        prefs = getSharedPreferences("software.pipas.feupstudents", MODE_PRIVATE);
 
         inputPassword = findViewById(R.id.inputPassword);
         inputUser = findViewById(R.id.inputUser);
@@ -53,6 +58,7 @@ public class LoginActivity extends AppCompatActivity
                 returnIntent.putExtra("username", sUsername);
                 returnIntent.putExtra("password", sPassword);
 
+                prefs.edit().putBoolean("firstrun", false).apply();
                 setResult(Activity.RESULT_OK,returnIntent);
                 finish();
             }
@@ -92,12 +98,22 @@ public class LoginActivity extends AppCompatActivity
     }
 
     @Override
-    public void onBackPressed()
+    protected void onResume()
     {
-        Intent returnIntent = new Intent();
-        setResult(Activity.RESULT_CANCELED, returnIntent);
-        finish();
+        super.onResume();
+
+        if (!prefs.getBoolean("firstrun", true))
+            firstRun = false;
     }
 
-
+    @Override
+    public void onBackPressed()
+    {
+        if(!firstRun)
+        {
+            Intent returnIntent = new Intent();
+            setResult(Activity.RESULT_CANCELED, returnIntent);
+            finish();
+        }
+    }
 }

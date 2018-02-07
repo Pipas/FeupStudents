@@ -5,7 +5,6 @@ import android.app.Activity;
 import android.app.DownloadManager;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -97,6 +96,14 @@ public class MainActivity extends AppCompatActivity
 
         webView = findViewById(R.id.webview);
         webView.getSettings().setJavaScriptEnabled(true);
+
+        webView.getSettings().setSupportZoom(true);
+        webView.getSettings().setBuiltInZoomControls(true);
+        webView.getSettings().setDisplayZoomControls(false);
+
+        webView.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
+        webView.setScrollbarFadingEnabled(false);
+
         webView.addJavascriptInterface(new WebAppInterface(this), "Android");
 
         swipeContainer = findViewById(R.id.swipeContainer);

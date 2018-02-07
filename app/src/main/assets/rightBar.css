@@ -8,10 +8,6 @@
     width: 100% !important;
 }
 
-#caixa-atalhos {
-    display: none !important;
-}
-
 #barralocalizacao {
     display: none !important;
 }
@@ -32,65 +28,73 @@ div.saltar {
     display: none !important;
 }
 
-div.caixa-opcoes-cabecalho {
+div.caixa-opcoes-cabecalho, div#caixa-atalhos-cabecalho {
     height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 16px !important;
+    border-bottom: 1px solid #d7d7d7;
 }
 
-div.caixa-opcoes-conteudo ul{
+div.caixa-opcoes-conteudo ul, div#caixa-atalhos-conteudo ul {
     padding: 0 !important;
+    margin: 0 !important;
+    border-bottom: 1px solid #d7d7d7;
 }
 
-div.caixa-opcoes-conteudo ul li{
+div.caixa-opcoes-conteudo ul li, div#caixa-atalhos-conteudo ul li {
     list-style-type: none;
-    height: 56px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-bottom: 1px solid #d7d7d7;
     margin-bottom: 0;
+    padding: 8px 0;
 }
 
-div.caixa-opcoes-conteudo ul li:last-child{
+div.caixa-opcoes-conteudo ul li:last-child, div#caixa-atalhos-conteudo ul li:last-child {
     border-bottom: 0;
 }
 
-div.caixa-opcoes-conteudo ul li a:link {
+div#caixa-atalhos-conteudo {
+    padding: 0;
+}
+
+div.caixa-opcoes-conteudo ul li a:link, div#caixa-atalhos-conteudo ul li a:link {
     font-size: 24px;
     font-family : "Trebuchet MS", Arial, sans-serif;
     text-decoration: none;
     color: #525252;
+    text-align: center;
 }
 
-#lista22842 {
+.menos {
     list-style-type: none;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
     border-bottom: 1px solid #d7d7d7;
-    border-top: 1px solid #d7d7d7;
     padding: 0;
 }
 
-#lista22842 > li{
+.menos > li{
     flex: 1;
     display: flex;
     flex-direction: row;
     height: auto;
+    padding: 0 !important;
 }
 
-#lista22842 li div{
+.menos li div{
     flex: 1;
 }
 
-#lista22842 > li > a{
+.menos > li > a{
     display: none;
 }
 
-#lista22842 ul{
+.menos ul{
     padding: 0;
 }

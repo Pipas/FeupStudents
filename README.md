@@ -18,7 +18,7 @@ The app doesn't access any info that is being displayed on the website, the webs
 
 The auto login feature works by checking if the user is not logged in and using the users encrypted details stored on device to login using a simple JavaScript function.
 
-**All user data is encrypted and kept on device.** Encryption is handed by the library [Qlassified Android](https://github.com/Q42/Qlassified-Android) that is itself a wrapper for the [Android Keystore System](https://developer.android.com/training/articles/keystore.html). The developer of this app has no access to such data and they are not uploaded to any servers or remote locations.
+**All user data is encrypted and kept on device.** Encryption is handed by the library [Qlassified Android](https://github.com/Q42/Qlassified-Android) that is itself a wrapper for the [Android Keystore System](https://developer.android.com/training/articles/keystore.html). The developer of this app has no access to such data and it is not uploaded to any servers or remote locations.
 
 ## Libraries
  * [AHBottomNavigation](https://github.com/aurelhubert/ahbottomnavigation) -  aurelhubert
@@ -27,7 +27,7 @@ The auto login feature works by checking if the user is not logged in and using 
  * [Qlassified Android](https://github.com/Q42/Qlassified-Android) - Q42
 
 ## Contributing
-All code for the app is available and open source in this repository, feel free to fork and submit pull requests for review.
+All code for the app is open source and available in this repository, feel free to fork and submit pull requests for review.
 The project was made in about a week so no rigorous testing or coding guidelines are being followed.
 
 ## Author

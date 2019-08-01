@@ -1,6 +1,6 @@
 # FEUP for Students
 
-Uma aplicação para aceder ao site do SIGARRA da Faculdade de Engenharia da Universidade do Porto, optimizado para telemóveis.
+A mobile app to access FEUP's SIGARRA website optimized for mobile devices.
 
 ## Download
 <a href="https://play.google.com/store/apps/details?id=software.pipas.feupstudents">
@@ -9,27 +9,28 @@ Uma aplicação para aceder ao site do SIGARRA da Faculdade de Engenharia da Uni
 </a>
 
 ## Features
-* Visualização e navegação optimizadas para telemóvel
-* Login automático
-* Adicionar favoritos
+* Optimized navigation and display for mobile devices
+* Auto login
+* Add and manage favorite pages
 
-## Segurança
-A aplicação não acede a nenhuma informação que se encontra no site do Sigarra, ao carregar a página é aplicado um ficheiro CSS costumizado que muda o estilo da página html.
+## Security
+The app doesn't access any info that is being displayed on the website, the website is fully loaded and then CSS code is injected to the webview in order to change the display style.
 
-O Auto-login corre se a aplicação verificar que o utilizador não se encontra com sessão iniciada, e utiliza os dados encriptados introduzidos pelo utilizador para fazer login através de um simples script de JavaScript.
+The auto login feature works by checking if the user is not logged in and using the users encrypted details stored on device to login using a simple JavaScript function.
 
-Os dados introduzidos são todos encriptados no dispositivo e nunca saem do telémovel. A encriptação é tratada pela biblioteca [Qlassified Android](https://github.com/Q42/Qlassified-Android) que é um wrapper do [Keystore System](https://developer.android.com/training/articles/keystore.html) do Android. O criador desta aplicação não tem qualquer acesso as estes dados.
+**All user data is encrypted and kept on device.** Encryption is handed by the library [Qlassified Android](https://github.com/Q42/Qlassified-Android) that is itself a wrapper for the [Android Keystore System](https://developer.android.com/training/articles/keystore.html). The developer of this app has no access to such data and they are not uploaded to any servers or remote locations.
 
-## Bibliotecas
+## Libraries
  * [AHBottomNavigation](https://github.com/aurelhubert/ahbottomnavigation) -  aurelhubert
  * [MaterialDrawer](https://github.com/mikepenz/MaterialDrawer) - mikepenz
  * [LovelyDialog](https://github.com/yarolegovich/LovelyDialog) - yarolegovich
  * [Qlassified Android](https://github.com/Q42/Qlassified-Android) - Q42
 
-## Contribuir
-O código da aplicação encontra-se disponivel na sua totalidade neste repositório, podes fazer fork e submeter um pull request pelo o GitHub ou enviar sugestões e feedback para pipas.software@gmail.com
+## Contributing
+All code for the app is available and open source in this repository, feel free to fork and submit pull requests for review.
+The project was made in about a week so no rigorous testing or coding guidelines are being followed.
 
-## Autor
+## Author
  * **Paulo Correia** - MIEIC FEUP
  
- Aplicação não afiliada com a FEUP ou com a Universidade do Porto.
+ App not affiliated with FEUP or Universidade do Porto.
